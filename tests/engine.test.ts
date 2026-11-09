@@ -63,7 +63,7 @@ describe("brief sample rows", () => {
     expect(r.difference).toBe(rupees(-46));
     expect(r.status).toBe("freight_overcharged");
     expect(r.atRisk).toBe(rupees(46));
-    expect(r.issues[0].message).toContain("1 kg slab");
+    expect(r.issues[0].message).toContain("1 kg (1 kg slab) vs declared 0.5 kg");
   });
 });
 

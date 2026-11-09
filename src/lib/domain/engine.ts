@@ -285,7 +285,7 @@ export function reconcileOrder(o: OrderRow, ctx: Ctx): ReconResult {
       freightOver = billedFreight - (expectedFreight ?? 0);
       if (freightOver > tol) {
         const wNote = maxBilledW && o.weightKg !== null && maxBilledW > o.weightKg
-          ? ` Billed at ${slabLabel(cc, o.zone, maxBilledW)} (${maxBilledW} kg) vs declared ${o.weightKg} kg.`
+          ? ` Billed weight ${maxBilledW} kg (${slabLabel(cc, o.zone, maxBilledW)}) vs declared ${o.weightKg} kg (${slabLabel(cc, o.zone, o.weightKg)}).`
           : "";
         issues.push({ type: "freight_overcharged", amount: freightOver, partner: o.courier, message: `Freight billed ₹${(billedFreight / 100).toFixed(2)} vs rate card ₹${((expectedFreight ?? 0) / 100).toFixed(2)}.${wNote}`, since: lastInvoiceDate });
       } else freightOver = 0;

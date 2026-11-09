@@ -477,17 +477,24 @@ function Mini({ label, value, tone }: { label: string; value: number; tone?: "ok
 }
 
 function Steps({ step }: { step: Step }) {
-  const all: [Step, string][] = [["pick", "Choose file"], ["map", "Map & preview"], ["import", "Import"], ["done", "Matched"]];
-  const idx = all.findIndex(([s]) => s === step);
+  const all: [Step[], string, string][] = [[["pick"], "Upload", "CSV or Excel"], [["map"], "Map columns", "AI + rules, you approve"], [["import", "done"], "Validate & import", "Row checks, then match"]];
+  const idx = all.findIndex(([s]) => s.includes(step));
+  const finished = step === "done";
   return (
-    <ol className="flex items-center gap-2 overflow-x-auto text-[13px]">
-      {all.map(([s, label], i) => (
-        <li key={s} className="flex shrink-0 items-center gap-2">
-          <span className={cx("flex h-6 w-6 items-center justify-center rounded-full text-xs font-medium", i < idx ? "bg-ok text-white" : i === idx ? "bg-ink text-white" : "bg-sunken text-muted")}>{i < idx ? "✓" : i + 1}</span>
-          <span className={i === idx ? "font-medium text-ink" : "text-muted"}>{label}</span>
-          {i < all.length - 1 && <span className="mx-1 h-px w-6 bg-line-strong" />}
-        </li>
-      ))}
+    <ol className="grid grid-cols-3 overflow-hidden rounded-xl border border-line bg-surface">
+      {all.map(([, label, hint], i) => {
+        const done = i < idx || finished;
+        const on = i === idx && !finished;
+        return (
+          <li key={label} className={cx("flex items-center gap-2.5 px-3 py-2.5 sm:px-4", i > 0 && "border-l border-line", on && "bg-raised")} aria-current={on ? "step" : undefined}>
+            <span className={cx("flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold", done ? "bg-ok text-white" : on ? "bg-ink text-white" : "bg-sunken text-muted")}>{done ? "✓" : i + 1}</span>
+            <span className="min-w-0">
+              <span className={cx("block truncate text-[13px]", on || done ? "font-medium text-ink" : "text-muted")}>{label}</span>
+              <span className="hidden truncate text-[11.5px] text-muted sm:block">{hint}</span>
+            </span>
+          </li>
+        );
+      })}
     </ol>
   );
 }

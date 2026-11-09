@@ -11,6 +11,9 @@ import { requireUser } from "@/server/auth";
 import { listOrders, orderFilterSchema } from "@/server/orders-query";
 import { partnerNames } from "@/server/queries";
 import { formatINR } from "@/lib/domain/money";
+import { Drawer } from "@/components/drawer";
+import { OrderEvidence, OrderHeading } from "@/components/orders/order-evidence";
+import { loadOrderDetail } from "@/server/order-detail";
 
 export const metadata: Metadata = { title: "Orders" };
 
@@ -21,7 +24,12 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
   const sp = await searchParams;
   const f = orderFilterSchema.parse(sp);
   const [data, names, counts] = await Promise.all([listOrders(f), partnerNames(), sql<{ status: string; n: number }[]>`select status, count(*)::int as n from recon_results group by 1`]);
-  const qs = new URLSearchParams(Object.entries(sp).filter(([k, v]) => v && k !== "page")).toString();
+  const qs = new URLSearchParams(Object.entries(sp).filter(([k, v]) => v && k !== "page" && k !== "view")).toString();
+  const listQs = new URLSearchParams(Object.entries(sp).filter(([k, v]) => v && k !== "view")).toString();
+  const view = typeof sp.view === "string" ? sp.view.slice(0, 80) : null;
+  const detail = view ? await loadOrderDetail(view) : null;
+  const viewHref = (id: string) => `/orders?${[listQs, `view=${encodeURIComponent(id)}`].filter(Boolean).join("&")}`;
+  const closeHref = `/orders${listQs ? `?${listQs}` : ""}`;
 
   return (
     <>
@@ -61,8 +69,8 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
         <>
           {/* Desktop table */}
           <Card className="mt-3 hidden overflow-hidden md:block">
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse">
+            <div className="max-h-[calc(100dvh-250px)] min-h-[420px] overflow-auto">
+              <table className="ledger">
                 <thead>
                   <tr>
                     <Th>Order</Th>
@@ -78,12 +86,12 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
                 </thead>
                 <tbody>
                   {data.rows.map((r) => (
-                    <tr key={r.order_id} className="group hover:bg-sunken/50">
+                    <tr key={r.order_id} className="group relative" data-active={view === r.order_id ? "true" : undefined}>
                       <Td>
-                        <Link href={`/orders/${encodeURIComponent(r.order_id)}`} className="font-medium text-ink group-hover:text-accent group-hover:underline">
+                        <Link href={viewHref(r.order_id)} scroll={false} className="font-mono text-[12.5px] font-medium text-ink after:absolute after:inset-0 group-hover:underline">
                           {r.order_id}
                         </Link>
-                        <div className="text-xs text-muted">{fmtDate(r.order_date)}</div>
+                        <div className="text-[11.5px] text-muted">{fmtDate(r.order_date)}</div>
                       </Td>
                       <Td className="text-ink-2">
                         {names[r.channel]}
@@ -107,10 +115,10 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
           <ul className="mt-3 space-y-2 md:hidden">
             {data.rows.map((r) => (
               <li key={r.order_id}>
-                <Link href={`/orders/${encodeURIComponent(r.order_id)}`} className="block rounded-xl border border-line bg-surface p-3.5 active:bg-sunken">
+                <Link href={viewHref(r.order_id)} scroll={false} className="block rounded-xl border border-line bg-surface p-3.5 active:bg-sunken">
                   <div className="flex items-start justify-between gap-2">
                     <div>
-                      <div className="font-medium">{r.order_id}</div>
+                      <div className="font-mono text-[13px] font-medium">{r.order_id}</div>
                       <div className="text-xs text-muted">
                         {names[r.channel]} · {r.payment_mode} · {fmtDate(r.order_date)}
                       </div>
@@ -142,6 +150,13 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
           </ul>
           <Pager page={data.page} pages={data.pages} basePath="/orders" query={qs} />
         </>
+      )}
+      {view && (
+        <Drawer closeHref={closeHref} expandHref={`/orders/${encodeURIComponent(view)}`} title={`Order ${view}`}>
+          {detail ? (
+            <div className="space-y-4"><OrderHeading d={detail} names={names} /><OrderEvidence d={detail} names={names} compact /></div>
+          ) : <EmptyState title="Order not found" body={`No order with ID ${view}.`} />}
+        </Drawer>
       )}
     </>
   );

@@ -1,39 +1,58 @@
 @import "tailwindcss";
 
 /*
- * LeakLens design tokens. One neutral ramp, one ink-blue accent for actions, and three semantic
- * tones reserved for money: loss (red), pending (amber), settled (green). Colour is only used
- * where it carries meaning, so a red number always means money at risk.
+ * LeakLens design tokens — informed by the Dribbble finance references in the TDD (refs 01–10).
+ * Warm, low-glare stone canvas; near-black ink; one deep-sage accent for actions. Semantic colour is
+ * reserved for money: sage = settled/matched, amber = needs review, muted brick = material risk.
+ * Negative amounts always carry a minus sign too, so colour is never the only signal.
  */
 @theme {
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
 
-  --color-canvas: #f6f6f3;
-  --color-surface: #ffffff;
-  --color-sunken: #f1f1ed;
-  --color-line: #e4e3dd;
-  --color-line-strong: #d3d2cb;
-  --color-ink: #191a17;
-  --color-ink-2: #3f403b;
-  --color-muted: #6e6f68;
-  --color-faint: #9a9b93;
+  --color-canvas: #f4f2ed;
+  --color-surface: #fbfaf7;
+  --color-raised: #ffffff;
+  --color-sunken: #ece9e2;
+  --color-line: #e3dfd6;
+  --color-line-strong: #d2cdc1;
+  --color-ink: #242722;
+  --color-ink-2: #45483f;
+  --color-muted: #6f7168;
+  --color-faint: #9c9d93;
 
-  --color-accent: #23408e;
-  --color-accent-hover: #1b3274;
-  --color-accent-soft: #eef1fa;
+  --color-rail: #1f2420;
+  --color-rail-2: #2b312c;
+  --color-rail-ink: #e9ebe4;
+  --color-rail-muted: #9aa198;
 
-  --color-loss: #b42318;
-  --color-loss-soft: #fdf1ef;
-  --color-loss-line: #f4c7c1;
-  --color-warn: #a15c07;
-  --color-warn-soft: #fdf6e7;
-  --color-warn-line: #f1dcae;
-  --color-ok: #1d7a46;
-  --color-ok-soft: #eef7f1;
-  --color-ok-line: #c3e3cf;
-  --color-info: #3f5a8a;
-  --color-info-soft: #f0f3f8;
+  --color-accent: #3d5c48;
+  --color-accent-hover: #2f4a39;
+  --color-accent-soft: #e4ebe3;
+
+  --color-loss: #a2402f;
+  --color-loss-soft: #f6e9e4;
+  --color-loss-line: #e6c6bb;
+  --color-warn: #946016;
+  --color-warn-soft: #f6eedb;
+  --color-warn-line: #e6d3a8;
+  --color-ok: #4a7656;
+  --color-ok-soft: #e6eee6;
+  --color-ok-line: #c3d5c4;
+  --color-info: #4f5d6b;
+  --color-info-soft: #eaece9;
+
+  --animate-drawer: drawer-in 180ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  --animate-fade: fade-in 140ms ease-out;
+}
+
+@keyframes drawer-in {
+  from { transform: translateX(24px); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 html {
@@ -63,7 +82,7 @@ body {
   100% { background-position: 400px 0; }
 }
 .skeleton {
-  background: linear-gradient(90deg, #ecebe6 0px, #f5f4f0 120px, #ecebe6 240px);
+  background: linear-gradient(90deg, #e9e6df 0px, #f3f1ec 120px, #e9e6df 240px);
   background-size: 800px 100%;
   animation: shimmer 1.4s infinite linear;
   border-radius: 6px;
@@ -72,3 +91,13 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .skeleton { animation: none; }
 }
+
+/* Dense ledger tables: sticky header, hairline rules, 42px rows. */
+.ledger { border-collapse: separate; border-spacing: 0; width: 100%; }
+.ledger thead th { position: sticky; top: 0; z-index: 1; background: var(--color-surface); }
+.ledger tbody tr { height: 42px; }
+.ledger tbody tr:hover td { background: color-mix(in oklab, var(--color-sunken) 45%, transparent); }
+.ledger tbody tr[data-active="true"] td { background: var(--color-accent-soft); }
+
+.scrollbar-none { scrollbar-width: none; }
+.scrollbar-none::-webkit-scrollbar { display: none; }

@@ -7,6 +7,7 @@ import { CLAIM_STATUS, CLAIM_TRANSITIONS, type ClaimStatus } from "@/lib/claims"
 import { STATUS_LABEL, type ReconStatus } from "@/lib/domain/types";
 import { formatINR } from "@/lib/domain/money";
 import { Alert, Badge, Button, Card, cx, Money, Td, Th } from "@/components/ui";
+import { toast } from "@/components/toast";
 import { updateClaims } from "./actions";
 
 export interface ClaimItem {
@@ -23,7 +24,8 @@ export interface ClaimItem {
 
 const ACTION_LABEL: Record<string, string> = { raised: "Mark raised", recovered: "Mark recovered", rejected: "Close as rejected", open: "Reopen" };
 
-export function ClaimsTable({ items, canClose }: { items: ClaimItem[]; canClose: boolean }) {
+export function ClaimsTable({ items, canClose, listQs, activeId }: { items: ClaimItem[]; canClose: boolean; listQs: string; activeId: number | null }) {
+  const viewHref = (id: number) => `/claims?${[listQs, `view=${id}`].filter(Boolean).join("&")}`;
   const [sel, setSel] = useState<Set<number>>(new Set());
   const [msg, setMsg] = useState<{ ok: boolean; message: string } | null>(null);
   const [pending, start] = useTransition();
@@ -34,6 +36,7 @@ export function ClaimsTable({ items, canClose }: { items: ClaimItem[]; canClose:
     start(async () => {
       const r = await updateClaims({ ids, to });
       setMsg(r);
+      toast(r.ok, r.message);
       if (r.ok) {
         setSel(new Set());
         router.refresh();
@@ -50,8 +53,8 @@ export function ClaimsTable({ items, canClose }: { items: ClaimItem[]; canClose:
 
   return (
     <div className="mt-3 space-y-3">
-      {msg && <Alert tone={msg.ok ? "ok" : "loss"}>{msg.message}</Alert>}
-      <div className={cx("sticky top-14 z-10 flex flex-wrap items-center gap-2 rounded-xl border border-line bg-surface px-3 py-2 shadow-sm lg:top-2", sel.size === 0 && "hidden")}>
+      {msg && !msg.ok && <Alert tone="loss">{msg.message}</Alert>}
+      <div className={cx("sticky top-16 z-20 flex flex-wrap items-center gap-2 rounded-xl border border-line bg-raised px-3 py-2 shadow-md", sel.size === 0 && "hidden")}>
         <span className="text-sm">
           <span className="num font-medium">{sel.size}</span> selected · <span className="num">{formatINR(selAmount)}</span>
         </span>
@@ -64,7 +67,8 @@ export function ClaimsTable({ items, canClose }: { items: ClaimItem[]; canClose:
       </div>
 
       <Card className="hidden overflow-hidden md:block">
-        <table className="w-full border-collapse">
+        <div className="max-h-[calc(100dvh-240px)] min-h-[360px] overflow-auto">
+        <table className="ledger">
           <thead>
             <tr>
               <Th className="w-10">
@@ -81,12 +85,12 @@ export function ClaimsTable({ items, canClose }: { items: ClaimItem[]; canClose:
           </thead>
           <tbody>
             {items.map((c) => (
-              <tr key={c.id} className={cx("hover:bg-sunken/50", sel.has(c.id) && "bg-accent-soft/60")}>
+              <tr key={c.id} data-active={activeId === c.id || sel.has(c.id) ? "true" : undefined}>
                 <Td>
                   <input type="checkbox" aria-label={`Select claim ${c.id}`} checked={sel.has(c.id)} onChange={() => toggle(c.id)} className="accent-[var(--color-accent)]" />
                 </Td>
                 <Td>
-                  <Link className="font-medium hover:text-accent hover:underline" href={`/orders/${encodeURIComponent(c.order_id)}`}>{c.order_id}</Link>
+                  <Link className="font-mono text-[12.5px] font-medium hover:underline" scroll={false} href={viewHref(c.id)}>{c.order_id}</Link>
                   <div className="text-xs text-muted">#{c.id}{c.note ? ` · ${c.note}` : ""}</div>
                 </Td>
                 <Td className="text-ink-2">{c.partnerName}</Td>
@@ -107,6 +111,7 @@ export function ClaimsTable({ items, canClose }: { items: ClaimItem[]; canClose:
             ))}
           </tbody>
         </table>
+        </div>
       </Card>
 
       <ul className="space-y-2 md:hidden">
@@ -116,7 +121,7 @@ export function ClaimsTable({ items, canClose }: { items: ClaimItem[]; canClose:
               <input type="checkbox" aria-label={`Select claim ${c.id}`} checked={sel.has(c.id)} onChange={() => toggle(c.id)} className="mt-1 accent-[var(--color-accent)]" />
               <div className="min-w-0 flex-1">
                 <div className="flex items-start justify-between gap-2">
-                  <Link href={`/orders/${encodeURIComponent(c.order_id)}`} className="font-medium">{c.order_id}</Link>
+                  <Link href={viewHref(c.id)} scroll={false} className="font-mono text-[13px] font-medium">{c.order_id}</Link>
                   <Money paise={c.amount} className="font-semibold" />
                 </div>
                 <div className="text-xs text-muted">{c.partnerName} · {STATUS_LABEL[c.type as ReconStatus]} · {c.ageDays ?? 0} d</div>

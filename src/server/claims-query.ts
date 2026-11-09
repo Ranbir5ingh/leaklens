@@ -8,10 +8,12 @@ export const claimFilterSchema = z.object({
   type: z.enum(["short_paid", "unpaid_past_due", "freight_overcharged", "return_not_received"]).optional().catch(undefined),
   q: z.string().trim().max(60).optional().catch(undefined),
   page: z.coerce.number().int().min(1).max(10000).optional().catch(undefined),
+  id: z.coerce.number().int().positive().optional().catch(undefined),
 });
 export type ClaimFilter = z.infer<typeof claimFilterSchema>;
 
 export function claimWhere(f: ClaimFilter) {
+  if (f.id) return sql`c.id = ${f.id}`;
   const parts = [sql`true`];
   if (f.partner) parts.push(sql`c.partner = ${f.partner}`);
   const st = f.status ?? "active";
@@ -66,4 +68,18 @@ export async function partnerClaimSummary() {
       coalesce(sum(amount) filter (where status = 'raised'), 0)::bigint as raised_amt, count(*) filter (where status = 'raised')::int as raised_n,
       coalesce(sum(recovered_amount) filter (where status = 'recovered'), 0)::bigint as recovered_amt
     from claims group by partner order by 2 desc`;
+}
+
+export interface ClaimTimelineEntry { at: Date; who: string | null; action: string; note: string | null }
+
+/** One claim with its timeline (creation, every status change from the audit log). */
+export async function loadClaim(id: number) {
+  const [c] = await sql<{ id: number; partner: string; order_id: string; type: string; amount: number; status: string; recovered_amount: number; note: string | null; risk_since: string | null; created_at: Date; updated_at: Date }[]>`
+    select id, partner, order_id, type, amount, status, recovered_amount, note, risk_since::text, created_at, updated_at from claims where id = ${id}`;
+  if (!c) return null;
+  const events = await sql<ClaimTimelineEntry[]>`
+    select a.at, u.name as who, a.action, a.detail->>'note' as note from audit_log a left join users u on u.id = a.user_id
+    where a.entity = 'claims' and a.action like 'claims.%' and (a.entity_id = ${String(id)} or a.detail->'ids' @> ${JSON.stringify([id])}::text::jsonb)
+    order by a.at`;
+  return { claim: c, events };
 }

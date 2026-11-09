@@ -16,7 +16,7 @@
     "bench": "tsx scripts/benchmark.ts --orders 100000",
     "bench:db": "tsx scripts/benchmark.ts --orders 100000 --db",
     "e2e": "playwright test",
-    "vercel-build": "tsx scripts/migrate.ts && tsx scripts/seed.ts --if-empty && next build"
+    "vercel-build": "tsx scripts/migrate.ts && tsx scripts/seed.ts --if-stale && next build"
   },
   "dependencies": {
     "@pdf-lib/fontkit": "^1.1.1",

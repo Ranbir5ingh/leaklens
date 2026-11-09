@@ -21,6 +21,9 @@ export const DEMO_USERS = [
   { email: "cofounder@leaklens.demo", name: "Vikram Mehta", role: "cofounder", password: process.env.SEED_COFOUNDER_PASSWORD || "Founder@Demo2026" },
 ] as const;
 
+/** Bump when the generator or seed changes so the next deploy rebuilds the live demo data. */
+const SEED_VERSION = "2026-11-09.2";
+
 async function main() {
   const url = process.env.DATABASE_URL_UNPOOLED || process.env.DATABASE_URL;
   if (!url) throw new Error("DATABASE_URL is not set");
@@ -29,11 +32,12 @@ async function main() {
   const asOf = todayIST();
   const t0 = performance.now();
 
-  // Deploy builds call `seed --if-empty` so a fresh database gets demo data but live data is never wiped.
-  if (process.argv.includes("--if-empty")) {
-    const [{ n: users }] = await sql<{ n: number }[]>`select count(*)::int as n from users`;
-    if (users > 0) {
-      console.log(`Database already has ${users} users — skipping seed.`);
+  // Deploy builds call `seed --if-stale`: a fresh database gets demo data, and the demo is rebuilt only when the
+  // generator itself changed (SEED_VERSION). Otherwise whatever reviewers did on the live demo is kept.
+  if (process.argv.includes("--if-stale")) {
+    const [last] = await sql<{ v: string | null }[]>`select detail->>'version' as v from audit_log where action = 'seed' order by id desc limit 1`;
+    if (last?.v === SEED_VERSION) {
+      console.log(`Demo data is already at seed version ${SEED_VERSION} — skipping seed.`);
       await sql.end();
       return;
     }
@@ -96,7 +100,7 @@ async function main() {
   await sql`update claims set status = 'recovered', recovered_amount = amount, updated_by = ${exec}, note = 'Credited in next settlement', updated_at = now() - interval '2 days' where id in (select id from claims where status = 'raised' order by id limit (select count(*) / 3 from claims where status = 'raised'))`;
   await sql`update claims set status = 'rejected', updated_by = ${founder}, note = 'Partner rejected: outside dispute window', updated_at = now() - interval '1 day' where id in (select id from claims where status = 'raised' order by id desc limit 3)`;
 
-  await audit(sql as Sql, null, "seed", "database", null, { orders: n, asOf });
+  await audit(sql as Sql, null, "seed", "database", null, { orders: n, asOf, version: SEED_VERSION });
   console.log(`Seeded ${n} orders as of ${asOf} in ${((performance.now() - t0) / 1000).toFixed(1)} s`);
   await sql.end();
 }

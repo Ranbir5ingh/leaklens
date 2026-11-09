@@ -312,7 +312,10 @@ export function generate(opts: GenOptions): GeneratedData {
         other = rupees(int(r, 15, 160));
         inject("channel_short");
       }
-      const tcs = tcsOf(o.value);
+      // One realistic tax slip for the TCS & TDS screen: QC2 withheld TCS at 1% instead of 0.5% for payouts 30–60 days ago.
+      // TCS is still a claimable credit (counted as received), so this shows up only as a tax variance, never as leakage.
+      const tcsDoubled = o.channel === "QC2" && dayNumber(sDate) <= asOfDay - 30 && dayNumber(sDate) > asOfDay - 60;
+      const tcs = tcsOf(o.value) * (tcsDoubled ? 2 : 1);
       const tds = tdsOf(o.value);
       const net = o.value - commission - fixed - ship - other - tcs - tds;
       let orderId: string | null = o.orderId;

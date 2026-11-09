@@ -114,6 +114,7 @@ export interface ReceivedLine {
 export interface Issue {
   type: Exclude<ReconStatus, "settled" | "awaiting_payment"> | "overpaid";
   amount: Paise; // money at risk for this issue (positive)
+  partner: string; // who the claim is raised against
   message: string;
   since: string | null; // date the issue became actionable (for ageing)
 }

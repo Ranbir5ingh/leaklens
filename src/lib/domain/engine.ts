@@ -287,7 +287,7 @@ export function reconcileOrder(o: OrderRow, ctx: Ctx): ReconResult {
         const wNote = maxBilledW && o.weightKg !== null && maxBilledW > o.weightKg
           ? ` Billed at ${slabLabel(cc, o.zone, maxBilledW)} (${maxBilledW} kg) vs declared ${o.weightKg} kg.`
           : "";
-        issues.push({ type: "freight_overcharged", amount: freightOver, message: `Freight billed ₹${(billedFreight / 100).toFixed(2)} vs rate card ₹${((expectedFreight ?? 0) / 100).toFixed(2)}.${wNote}`, since: lastInvoiceDate });
+        issues.push({ type: "freight_overcharged", amount: freightOver, partner: o.courier, message: `Freight billed ₹${(billedFreight / 100).toFixed(2)} vs rate card ₹${((expectedFreight ?? 0) / 100).toFixed(2)}.${wNote}`, since: lastInvoiceDate });
       } else freightOver = 0;
     } else if (!netted) {
       // Invoice not in yet: assume rate-card freight so the order does not look over-paid.
@@ -314,7 +314,7 @@ export function reconcileOrder(o: OrderRow, ctx: Ctx): ReconResult {
   if (returned) {
     const windowEnd = o.statusDate ? addDays(o.statusDate, returnDays) : null;
     if (ctx.scans.length === 0 && windowEnd && dayNumber(windowEnd) < asOfDay) {
-      issues.push({ type: "return_not_received", amount: o.value, message: `Marked returned on ${o.statusDate}; no warehouse receipt scan after ${returnDays} days.`, since: windowEnd });
+      issues.push({ type: "return_not_received", amount: o.value, partner: kind === "website" && o.courier ? o.courier : o.channel, message: `Marked returned on ${o.statusDate}; no warehouse receipt scan after ${returnDays} days.`, since: windowEnd });
     }
   }
 
@@ -323,15 +323,15 @@ export function reconcileOrder(o: OrderRow, ctx: Ctx): ReconResult {
   if (!returned && expected > 0) {
     if (inflowRows === 0) {
       if (dueDate && dayNumber(dueDate) < asOfDay) {
-        issues.push({ type: "unpaid_past_due", amount: expected, message: `Nothing received; payment was due on ${dueDate}.`, since: dueDate });
+        issues.push({ type: "unpaid_past_due", amount: expected, partner, message: `Nothing received; payment was due on ${dueDate}.`, since: dueDate });
       }
     } else if (paymentGap < -tol) {
-      issues.push({ type: "short_paid", amount: -paymentGap, message: `Received ₹${((received + freightOver) / 100).toFixed(2)} against expected ₹${(expected / 100).toFixed(2)}.`, since: dueDate ?? lastDate(receivedLines) });
+      issues.push({ type: "short_paid", amount: -paymentGap, partner, message: `Received ₹${((received + freightOver) / 100).toFixed(2)} against expected ₹${(expected / 100).toFixed(2)}.`, since: dueDate ?? lastDate(receivedLines) });
     } else if (paymentGap > tol) {
-      issues.push({ type: "overpaid", amount: paymentGap, message: `Received ₹${(paymentGap / 100).toFixed(2)} more than expected — check for a later adjustment.`, since: lastDate(receivedLines) });
+      issues.push({ type: "overpaid", amount: paymentGap, partner, message: `Received ₹${(paymentGap / 100).toFixed(2)} more than expected — check for a later adjustment.`, since: lastDate(receivedLines) });
     }
   } else if (returned && inflowRows > 0 && paymentGap < -tol) {
-    issues.push({ type: "short_paid", amount: -paymentGap, message: `Return deductions exceed the rate card by ₹${(-paymentGap / 100).toFixed(2)}.`, since: lastDate(receivedLines) });
+    issues.push({ type: "short_paid", amount: -paymentGap, partner, message: `Return deductions exceed the rate card by ₹${(-paymentGap / 100).toFixed(2)}.`, since: lastDate(receivedLines) });
   }
 
   let status: ReconStatus = "settled";

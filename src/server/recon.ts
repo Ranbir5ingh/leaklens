@@ -60,7 +60,7 @@ export async function runReconciliation(sql: Sql, opts: { userId: number | null;
   const runStats = { ...out.stats, orphans: out.orphans.length, suggestions: suggestions.length, skipped: out.skipped.length, skippedSample: out.skipped.slice(0, 20) };
 
   const runId = await sql.begin(async (tx) => {
-    const [run] = await tx`insert into recon_runs (as_of, triggered_by, trigger, stats) values (${asOf}, ${opts.userId}, ${opts.trigger}, ${tx.json(runStats as never)}) returning id`;
+    const [run] = await tx`insert into recon_runs (as_of, triggered_by, trigger, stats) values (${asOf}, ${opts.userId}, ${opts.trigger}, ${JSON.stringify(runStats)}::text::jsonb) returning id`;
     await tx`delete from recon_results`;
     await bulkInsert(tx as unknown as Sql, "recon_results", out.results.map((r) => {
       const o = orderById.get(r.orderId)!;
@@ -70,7 +70,7 @@ export async function runReconciliation(sql: Sql, opts: { userId: number | null;
         expected: r.expected, received: r.received, difference: r.difference, tcs: r.tcs, tds: r.tds,
         expected_freight: r.expectedFreight, billed_freight: r.billedFreight, due_date: r.dueDate,
         at_risk: r.atRisk, risk_since: r.riskSince,
-        issues: tx.json(r.issues as never), expected_lines: tx.json(r.expectedLines as never), received_lines: tx.json(r.receivedLines as never),
+        issues: r.issues, expected_lines: r.expectedLines, received_lines: r.receivedLines,
       };
     }));
 
@@ -93,13 +93,13 @@ export async function runReconciliation(sql: Sql, opts: { userId: number | null;
     await tx`update match_suggestions set status = 'superseded' where status = 'pending' and not (orphan_kind || ':' || orphan_row_id = any(${orphanKeys}))`;
     const withSuggestion = new Set(suggestions.map((s) => `${s.orphan.kind}:${s.orphan.rowId}`));
     const row = (o: Orphan) => ({ orphan_kind: o.kind, orphan_row_id: o.rowId!, partner: o.partner, order_id_hint: o.orderIdHint, awb: o.awb, amount: o.amount, orphan_date: o.date });
-    await bulkInsert(tx as unknown as Sql, "match_suggestions", suggestions.filter((s) => s.orphan.rowId !== undefined).map((s) => ({ ...row(s.orphan), candidate_order_id: s.orderId, confidence: s.confidence, reasons: tx.json(s.reasons) })), { onConflict: "on conflict do nothing" });
-    await bulkInsert(tx as unknown as Sql, "match_suggestions", out.orphans.filter((o) => o.rowId !== undefined && !withSuggestion.has(`${o.kind}:${o.rowId}`)).map((o) => ({ ...row(o), candidate_order_id: null, confidence: 0, reasons: tx.json(["No plausible order found — check with the partner"]) })));
+    await bulkInsert(tx as unknown as Sql, "match_suggestions", suggestions.filter((s) => s.orphan.rowId !== undefined).map((s) => ({ ...row(s.orphan), candidate_order_id: s.orderId, confidence: s.confidence, reasons: s.reasons })), { onConflict: "on conflict do nothing" });
+    await bulkInsert(tx as unknown as Sql, "match_suggestions", out.orphans.filter((o) => o.rowId !== undefined && !withSuggestion.has(`${o.kind}:${o.rowId}`)).map((o) => ({ ...row(o), candidate_order_id: null, confidence: 0, reasons: ["No plausible order found — check with the partner"] })));
     return run.id as number;
   });
   const tWrite = performance.now();
   const timings = { loadMs: Math.round(tLoad - t0), matchMs: Math.round(tMatch - tLoad), suggestMs: Math.round(tSuggest - tMatch), writeMs: Math.round(tWrite - tSuggest), totalMs: Math.round(tWrite - t0) };
-  await sql`update recon_runs set duration_ms = ${timings.totalMs}, timings = ${sql.json(timings)} where id = ${runId}`;
+  await sql`update recon_runs set duration_ms = ${timings.totalMs}, timings = ${JSON.stringify(timings)}::text::jsonb where id = ${runId}`;
   await audit(sql, opts.userId, "recon.run", "recon_run", runId, { trigger: opts.trigger, ...timings, reconciled: out.stats.reconciled });
   return { runId, stats: runStats, timings };
 }

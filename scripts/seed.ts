@@ -40,7 +40,7 @@ async function main() {
 
   for (const p of PARTNERS) await sql`insert into partners (code, name, kind) values (${p.code}, ${p.name}, ${p.kind})`;
   for (const [code, card] of Object.entries(DEFAULT_RATE_CARDS)) {
-    await sql`insert into rate_cards (partner_code, version, card, note, is_active, created_by, created_at) values (${code}, 1, ${sql.json(card as never)}, 'Contract terms FY 2026-27', true, ${founder}, now() - interval '60 days')`;
+    await sql`insert into rate_cards (partner_code, version, card, note, is_active, created_by, created_at) values (${code}, 1, ${JSON.stringify(card)}::text::jsonb, 'Contract terms FY 2026-27', true, ${founder}, now() - interval '60 days')`;
   }
 
   const data = generate({ orders: n, asOf, days: 75 });
@@ -54,10 +54,10 @@ async function main() {
       const oldHeaders = headers.map((h) => (h === "net_payout" ? "net_amount" : h));
       const oldMap = formatToMapping(sf);
       oldMap.fields.net = "net_amount";
-      await sql`insert into mapping_versions (source_id, version, mapping, headers, header_signature, engine, note, is_active, created_by, created_at) values (${s.id}, 1, ${sql.json(oldMap as never)}, ${sql.json(oldHeaders)}, ${headerSignature(oldHeaders)}, 'manual', 'Initial mapping', false, ${exec}, now() - interval '70 days')`;
-      await sql`insert into mapping_versions (source_id, version, mapping, headers, header_signature, engine, model, note, is_active, created_by, created_at) values (${s.id}, 2, ${sql.json(formatToMapping(sf) as never)}, ${sql.json(headers)}, ${headerSignature(headers)}, 'gemini+heuristic', 'gemini-2.5-flash', 'Partner renamed net_amount → net_payout. AI suggestion, previewed on 20 rows and approved.', true, ${exec}, now() - interval '24 days')`;
+      await sql`insert into mapping_versions (source_id, version, mapping, headers, header_signature, engine, note, is_active, created_by, created_at) values (${s.id}, 1, ${JSON.stringify(oldMap)}::text::jsonb, ${JSON.stringify(oldHeaders)}::text::jsonb, ${headerSignature(oldHeaders)}, 'manual', 'Initial mapping', false, ${exec}, now() - interval '70 days')`;
+      await sql`insert into mapping_versions (source_id, version, mapping, headers, header_signature, engine, model, note, is_active, created_by, created_at) values (${s.id}, 2, ${JSON.stringify(formatToMapping(sf))}::text::jsonb, ${JSON.stringify(headers)}::text::jsonb, ${headerSignature(headers)}, 'gemini+heuristic', 'gemini-2.5-flash', 'Partner renamed net_amount → net_payout. AI suggestion, previewed on 20 rows and approved.', true, ${exec}, now() - interval '24 days')`;
     } else {
-      await sql`insert into mapping_versions (source_id, version, mapping, headers, header_signature, engine, note, is_active, created_by, created_at) values (${s.id}, 1, ${sql.json(formatToMapping(sf) as never)}, ${sql.json(headers)}, ${headerSignature(headers)}, 'manual', 'Initial mapping', true, ${exec}, now() - interval '70 days')`;
+      await sql`insert into mapping_versions (source_id, version, mapping, headers, header_signature, engine, note, is_active, created_by, created_at) values (${s.id}, 1, ${JSON.stringify(formatToMapping(sf))}::text::jsonb, ${JSON.stringify(headers)}::text::jsonb, ${headerSignature(headers)}, 'manual', 'Initial mapping', true, ${exec}, now() - interval '70 days')`;
     }
   }
 

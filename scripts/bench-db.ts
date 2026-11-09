@@ -11,7 +11,7 @@ export async function benchDbWrite(results: ReconResult[]): Promise<number> {
   await bulkInsert(sql, "bench_results", results.map((r) => ({
     order_id: r.orderId, run_id: 0, channel: r.channel, partner: r.partner, status: r.status, order_date: "2026-11-01", value: 0, payment_mode: "COD", delivery_status: "delivered",
     expected: r.expected, received: r.received, difference: r.difference, tcs: r.tcs, tds: r.tds, expected_freight: r.expectedFreight, billed_freight: r.billedFreight, due_date: r.dueDate,
-    at_risk: r.atRisk, risk_since: r.riskSince, issues: sql.json(r.issues as never), expected_lines: sql.json(r.expectedLines as never), received_lines: sql.json(r.receivedLines as never),
+    at_risk: r.atRisk, risk_since: r.riskSince, issues: r.issues, expected_lines: r.expectedLines, received_lines: r.receivedLines,
   })));
   const ms = performance.now() - t0;
   await sql.end();

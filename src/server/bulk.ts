@@ -1,19 +1,28 @@
 import type { Sql } from "postgres";
 
-/** Multi-row INSERT in chunks that stay under Postgres' 65,535 bind-parameter limit. */
+/**
+ * Set-based bulk INSERT: each chunk is sent as ONE JSON parameter and expanded server-side with
+ * json_populate_recordset, so Postgres does the type conversion (dates, ints, jsonb columns) and
+ * we avoid the 65,535 bind-parameter limit entirely. ~10k rows per round trip.
+ */
 export async function bulkInsert<T extends Record<string, unknown>>(
   sql: Sql,
   table: string,
   rows: T[],
-  opts: { onConflict?: string; returningCount?: boolean } = {},
+  opts: { onConflict?: string; chunkSize?: number } = {},
 ): Promise<number> {
   if (!rows.length) return 0;
+  if (!/^[a-z_]+$/.test(table)) throw new Error("bad table name");
   const cols = Object.keys(rows[0]);
-  const chunk = Math.max(1, Math.floor(60000 / cols.length));
+  const colList = cols.map((c) => `"${c.replace(/"/g, "")}"`).join(", ");
+  const chunk = opts.chunkSize ?? 10_000;
   let affected = 0;
   for (let i = 0; i < rows.length; i += chunk) {
-    const part = rows.slice(i, i + chunk);
-    const res = await sql`insert into ${sql(table)} ${sql(part as never, cols)} ${opts.onConflict ? sql.unsafe(opts.onConflict) : sql``}`;
+    const payload = JSON.stringify(rows.slice(i, i + chunk));
+    const res = await sql.unsafe(
+      `insert into ${table} (${colList}) select ${colList} from json_populate_recordset(null::${table}, $1::text::json) ${opts.onConflict ?? ""}`,
+      [payload],
+    );
     affected += res.count;
   }
   return affected;

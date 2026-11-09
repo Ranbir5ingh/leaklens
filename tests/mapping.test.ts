@@ -26,6 +26,8 @@ describe("value parsing", () => {
   it("folds delivery status and payment spellings", () => {
     expect(parseDeliveryStatus("Returned to warehouse")).toBe("rto");
     expect(parseDeliveryStatus("RTO Delivered")).toBe("rto");
+    expect(parseDeliveryStatus("RTO_DELIVERED")).toBe("rto");
+    expect(parseDeliveryStatus("RETURN_COMPLETED")).toBe("customer_return");
     expect(parseDeliveryStatus("Customer Return")).toBe("customer_return");
     expect(parseDeliveryStatus("Delivered")).toBe("delivered");
     expect(parseDeliveryStatus("Out for delivery")).toBe("in_transit");

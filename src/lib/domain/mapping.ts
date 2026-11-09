@@ -129,7 +129,8 @@ const STATUS_WORDS: [DeliveryStatus, RegExp][] = [
 ];
 
 export function parseDeliveryStatus(raw: unknown): DeliveryStatus | null {
-  const s = String(raw ?? "").toLowerCase().trim();
+  // Fold separators first so "RTO_DELIVERED" / "rto-delivered" read as "rto delivered".
+  const s = String(raw ?? "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
   if (!s) return null;
   for (const [k, re] of STATUS_WORDS) if (re.test(s)) return k;
   return null;

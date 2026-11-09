@@ -204,7 +204,7 @@ export const matchSuggestions = pgTable("match_suggestions", {
   reviewedBy: integer("reviewed_by").references(() => users.id),
   reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
-}, (t) => [uniqueIndex("match_suggestions_unique").on(t.orphanKind, t.orphanRowId, t.candidateOrderId), index("match_suggestions_status").on(t.status)]);
+}, (t) => [uniqueIndex("match_suggestions_unique").on(t.orphanKind, t.orphanRowId, t.candidateOrderId) /* NULLS NOT DISTINCT (set in SQL migration) */, index("match_suggestions_status").on(t.status)]);
 
 export const claims = pgTable("claims", {
   id: serial("id").primaryKey(),

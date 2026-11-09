@@ -94,7 +94,7 @@ export async function runReconciliation(sql: Sql, opts: { userId: number | null;
     const withSuggestion = new Set(suggestions.map((s) => `${s.orphan.kind}:${s.orphan.rowId}`));
     const row = (o: Orphan) => ({ orphan_kind: o.kind, orphan_row_id: o.rowId!, partner: o.partner, order_id_hint: o.orderIdHint, awb: o.awb, amount: o.amount, orphan_date: o.date });
     await bulkInsert(tx as unknown as Sql, "match_suggestions", suggestions.filter((s) => s.orphan.rowId !== undefined).map((s) => ({ ...row(s.orphan), candidate_order_id: s.orderId, confidence: s.confidence, reasons: s.reasons })), { onConflict: "on conflict do nothing" });
-    await bulkInsert(tx as unknown as Sql, "match_suggestions", out.orphans.filter((o) => o.rowId !== undefined && !withSuggestion.has(`${o.kind}:${o.rowId}`)).map((o) => ({ ...row(o), candidate_order_id: null, confidence: 0, reasons: ["No plausible order found — check with the partner"] })));
+    await bulkInsert(tx as unknown as Sql, "match_suggestions", out.orphans.filter((o) => o.rowId !== undefined && !withSuggestion.has(`${o.kind}:${o.rowId}`)).map((o) => ({ ...row(o), candidate_order_id: null, confidence: 0, reasons: ["No plausible order found — check with the partner"] })), { onConflict: "on conflict do nothing" });
     return run.id as number;
   });
   const tWrite = performance.now();

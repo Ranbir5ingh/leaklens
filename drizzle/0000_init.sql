@@ -251,7 +251,7 @@ CREATE UNIQUE INDEX "freight_lines_row_hash" ON "freight_lines" USING btree ("ro
 CREATE INDEX "freight_lines_awb" ON "freight_lines" USING btree ("awb");--> statement-breakpoint
 CREATE INDEX "login_attempts_email_at" ON "login_attempts" USING btree ("email","at");--> statement-breakpoint
 CREATE UNIQUE INDEX "mapping_versions_source_version" ON "mapping_versions" USING btree ("source_id","version");--> statement-breakpoint
-CREATE UNIQUE INDEX "match_suggestions_unique" ON "match_suggestions" USING btree ("orphan_kind","orphan_row_id","candidate_order_id");--> statement-breakpoint
+CREATE UNIQUE INDEX "match_suggestions_unique" ON "match_suggestions" USING btree ("orphan_kind","orphan_row_id","candidate_order_id") NULLS NOT DISTINCT;--> statement-breakpoint
 CREATE INDEX "match_suggestions_status" ON "match_suggestions" USING btree ("status");--> statement-breakpoint
 CREATE INDEX "orders_awb" ON "orders" USING btree ("awb");--> statement-breakpoint
 CREATE INDEX "orders_channel" ON "orders" USING btree ("channel");--> statement-breakpoint

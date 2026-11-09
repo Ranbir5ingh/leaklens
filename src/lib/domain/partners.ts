@@ -138,3 +138,6 @@ export const DEFAULT_RATE_CARDS: Record<string, RateCard> = {
     returnReceiptDays: 7,
   },
 };
+
+/** The three rows quoted in the brief. Sample files never touch them, so their arithmetic stays demonstrable. */
+export const BRIEF_SAMPLE_ORDER_IDS = ["ORD-W-204118", "ORD-M-88120", "ORD-W-204377"];

@@ -1,3 +1,4 @@
+import { BRIEF_SAMPLE_ORDER_IDS } from "@/lib/domain/partners";
 import { NextResponse } from "next/server";
 import * as XLSX from "xlsx";
 import Papa from "papaparse";
@@ -25,7 +26,7 @@ export const GET = route<Ctx>("upload.create", async (_req, _user, ctx) => {
 
   if (name === "mp1-settlement-new-format.csv") {
     const rows = await sql<{ order_id: string; value: number; expected: number; expected_lines: ExpectedLine[] }[]>`
-      select order_id, value, expected, expected_lines from recon_results where channel = 'MP1' and status in ('unpaid_past_due','awaiting_payment') and delivery_status = 'delivered' order by order_id limit 60`;
+      select order_id, value, expected, expected_lines from recon_results where channel = 'MP1' and status in ('unpaid_past_due','awaiting_payment') and delivery_status = 'delivered' and order_id <> all(${BRIEF_SAMPLE_ORDER_IDS}) order by order_id limit 60`;
     const H = MP1_SETTLEMENT_V2_HEADERS;
     const data = rows.map((r, i) => {
       const tcs = Math.round(pctOf(Math.round(r.value / 1.05), 0.5));
@@ -53,7 +54,7 @@ export const GET = route<Ctx>("upload.create", async (_req, _user, ctx) => {
 
   if (name === "ca1-cod-remittance.csv") {
     const rows = await sql<{ order_id: string; awb: string; value: number; expected: number }[]>`
-      select r.order_id, o.awb, r.value, r.expected from recon_results r join orders o using (order_id) where o.courier = 'CA1' and r.payment_mode = 'COD' and r.status in ('unpaid_past_due','awaiting_payment') and r.delivery_status = 'delivered' order by r.order_id limit 80`;
+      select r.order_id, o.awb, r.value, r.expected from recon_results r join orders o using (order_id) where o.courier = 'CA1' and r.payment_mode = 'COD' and r.status in ('unpaid_past_due','awaiting_payment') and r.delivery_status = 'delivered' and r.order_id <> all(${BRIEF_SAMPLE_ORDER_IDS}) order by r.order_id limit 80`;
     const data = rows.map((r, i) => ({
       "AWB No": r.awb,
       "Client Order ID": i % 3 === 0 ? "" : r.order_id,
@@ -67,7 +68,7 @@ export const GET = route<Ctx>("upload.create", async (_req, _user, ctx) => {
   }
 
   if (name === "warehouse-return-scans.xlsx") {
-    const rows = await sql<{ order_id: string; awb: string | null }[]>`select r.order_id, o.awb from recon_results r join orders o using (order_id) where r.status = 'return_not_received' order by r.order_id limit 25`;
+    const rows = await sql<{ order_id: string; awb: string | null }[]>`select r.order_id, o.awb from recon_results r join orders o using (order_id) where r.status = 'return_not_received' and r.order_id <> all(${BRIEF_SAMPLE_ORDER_IDS}) order by r.order_id limit 25`;
     const data = rows.map((r, i) => ({ "Inward Date": ddmmyyyy(addDays(today, -1)), "Order Number": r.awb && i % 2 ? "" : r.order_id, AWB: r.awb ?? "", "QC Result": i % 6 === 0 ? "Damaged" : "Good" }));
     if (!data.length) return NextResponse.json({ error: "No missing returns left to build a sample from" }, { status: 404 });
     const wb = XLSX.utils.book_new();

@@ -5,6 +5,7 @@ import { useState, useTransition } from "react";
 import { Check, Link2, X } from "lucide-react";
 import { formatINR } from "@/lib/domain/money";
 import { Badge, Button, Card, cx, fmtDate, inputClass, StatusBadge } from "@/components/ui";
+import { toast } from "@/components/toast";
 import { acceptSuggestion, linkManually, rejectSuggestions } from "./actions";
 
 export interface ReviewItem {
@@ -26,7 +27,7 @@ export function ReviewCard({ item, canDecide }: { item: ReviewItem; canDecide: b
   const [manual, setManual] = useState(false);
   const [orderId, setOrderId] = useState("");
   const done = msg?.ok;
-  const run = (fn: () => Promise<{ ok: boolean; message: string }>) => start(async () => setMsg(await fn()));
+  const run = (fn: () => Promise<{ ok: boolean; message: string }>) => start(async () => { const r = await fn(); setMsg(r); toast(r.ok, r.message); });
 
   return (
     <Card className={cx("overflow-hidden transition-opacity", done && "opacity-60")}>

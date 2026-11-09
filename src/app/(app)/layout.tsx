@@ -1,5 +1,6 @@
 import { sql } from "@/db";
 import { AppNav } from "@/components/nav";
+import { Toaster } from "@/components/toast";
 import { can, ROLE_LABEL } from "@/lib/permissions";
 import { requireUser } from "@/server/auth";
 import { logout } from "../login/actions";
@@ -13,6 +14,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <main className="lg:pl-60">
         <div className="mx-auto max-w-[1240px] px-4 py-6 sm:px-6 lg:px-10 lg:py-9">{children}</div>
       </main>
+      <Toaster />
     </div>
   );
 }

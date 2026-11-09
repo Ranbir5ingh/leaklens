@@ -45,7 +45,7 @@ To reset the demo data at any time, run `npm run db:seed`. It truncates the tabl
 ```bash
 npm run typecheck
 npm run lint
-npm test                        # 41 unit tests, including the 1-lakh-row performance test
+npm test                        # 45 unit tests, including the 1-lakh-row performance test
 npm run bench                   # 1,00,000 orders + 1,30,046 partner rows through parse → map → match → suggest
 npm run bench:db                # the same run, plus writing the results to Postgres
 

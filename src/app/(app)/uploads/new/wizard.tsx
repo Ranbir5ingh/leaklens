@@ -350,7 +350,7 @@ export function UploadWizard({ sources }: { sources: SourceOption[] }) {
             </Card>
           </div>
 
-          <Card className="sticky bottom-3 z-10 flex flex-col gap-3 p-4 shadow-lg sm:flex-row sm:items-center sm:justify-between">
+          <Card className="sticky bottom-[calc(4.75rem+env(safe-area-inset-bottom))] z-10 lg:bottom-3 flex flex-col gap-3 p-4 shadow-lg sm:flex-row sm:items-center sm:justify-between">
             <label className="flex items-start gap-2.5 text-sm">
               <input type="checkbox" className="mt-0.5 accent-[var(--color-accent)]" checked={approved} onChange={(e) => setApproved(e.target.checked)} disabled={!!missingRequired.length || !!usedTwice} />
               <span>

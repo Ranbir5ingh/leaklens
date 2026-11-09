@@ -126,7 +126,7 @@ export function Field({ label, hint, children, error }: { label: string; hint?: 
     </label>
   );
 }
-export const inputClass = "h-9 w-full rounded-lg border border-line-strong bg-raised px-3 text-sm text-ink placeholder:text-faint focus:border-accent focus:outline-none";
+export const inputClass = "h-9 w-full rounded-lg border border-line-strong bg-raised px-3 text-sm text-ink placeholder:text-faint focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20";
 
 export function Skeleton({ className }: { className?: string }) {
   return <div className={cx("skeleton", className)} />;

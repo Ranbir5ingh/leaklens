@@ -12,7 +12,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
         <div className="mx-auto w-full max-w-sm">
           <Logo />
           <h1 className="mt-10 text-2xl font-semibold tracking-tight">Sign in</h1>
-          <p className="mt-1 text-sm text-muted">Order, payment and return reconciliation for Company A.</p>
+          <p className="mt-1 text-sm text-balance text-muted">Order, payment and return reconciliation for Company A.</p>
           <div className="mt-8">
             <LoginForm next={next} showDemo={process.env.DEMO_MODE !== "off"} />
           </div>

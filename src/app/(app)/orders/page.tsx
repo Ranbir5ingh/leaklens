@@ -54,7 +54,8 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
           <span className="num font-medium text-ink">{data.total.toLocaleString("en-IN")}</span> orders
           {data.risk > 0 && (
             <>
-              {" "}· <span className="num font-medium text-loss">{formatINR(data.risk)}</span> at risk
+              {" "}· <span className="num font-medium text-loss">{formatINR(data.risk)}</span> flagged
+              <span className="hidden md:inline" title="The Overview counts only open and raised claims; this list also includes orders whose claim was already recovered or rejected."> · includes recovered and rejected claims</span>
             </>
           )}
         </span>

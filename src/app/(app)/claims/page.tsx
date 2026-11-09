@@ -66,11 +66,11 @@ export default async function ClaimsPage({ searchParams }: { searchParams: Promi
         }
       />
 
-      <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
+      <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 scrollbar-none md:mx-0 md:grid md:grid-cols-4 md:overflow-visible md:px-0">
         {summary.map((s) => {
           const on = f.partner === s.partner;
           return (
-            <Link key={s.partner} href={`/claims?${qs({ partner: on ? null : s.partner })}`} className={cx("min-w-[168px] shrink-0 rounded-xl border bg-surface p-3 transition-colors", on ? "border-ink shadow-[0_0_0_1px_var(--color-ink)]" : "border-line hover:border-line-strong")}>
+            <Link key={s.partner} href={`/claims?${qs({ partner: on ? null : s.partner })}`} className={cx("min-w-[168px] shrink-0 rounded-xl md:min-w-0 border bg-surface p-3 transition-colors", on ? "border-ink shadow-[0_0_0_1px_var(--color-ink)]" : "border-line hover:border-line-strong")}>
               <div className="text-[13px] font-medium">{names[s.partner] ?? s.partner}</div>
               <div className="num mt-1 text-lg font-semibold text-loss">{formatINRCompact(Number(s.open_amt) + Number(s.raised_amt))}</div>
               <div className="num text-xs text-muted">{s.open_n} open · {s.raised_n} raised · {formatINRCompact(Number(s.recovered_amt))} back</div>

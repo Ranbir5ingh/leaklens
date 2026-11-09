@@ -55,6 +55,8 @@ test("re-uploading the same file adds no duplicate money", async ({ page }, info
 test("review queue: a person links a suggested match", async ({ page }) => {
   await login(page, EXEC);
   await page.goto("/review");
+  await expect(page.getByRole("heading", { name: "Review queue" })).toBeVisible();
+  await expect(page.getByText("Rows to review")).toBeVisible();
   const first = page.getByRole("button", { name: "Link to this order" }).first();
   if (await first.count()) {
     await first.click();

@@ -8,6 +8,7 @@ import { cx } from "../ui";
 import { Logo } from "../logo";
 import { ALL_ITEMS, BOTTOM, NAV, activeItem, type BadgeKey, type NavItem } from "./nav-config";
 import { CommandPalette, openPalette } from "./command-palette";
+import { partnerName } from "@/lib/domain/partners";
 
 export interface ShellUser { name: string; roleLabel: string; canAudit: boolean }
 export interface ShellProps {
@@ -57,6 +58,14 @@ function RailLink({ item, active, collapsed, count }: { item: NavItem; active: b
       )}
     </Link>
   );
+}
+
+/** Breadcrumb leaf: readable names instead of raw ids or partner codes. */
+function subLabel(section: string, sub: string): string {
+  if (sub === "new") return "New upload";
+  if (section === "/mappings") return "Version history";
+  if (section === "/rate-cards") return partnerName(decodeURIComponent(sub));
+  return decodeURIComponent(sub);
 }
 
 export function AppShell({ user, counts, asOf, lastRunLabel, collapsed: initialCollapsed, logout, children }: ShellProps) {
@@ -121,7 +130,7 @@ export function AppShell({ user, counts, asOf, lastRunLabel, collapsed: initialC
                 <>
                   <Link href={current!.href} className="text-muted hover:text-ink">{current!.label}</Link>
                   <span className="text-faint">/</span>
-                  <span className="truncate font-medium text-ink">{sub === "new" ? "New upload" : decodeURIComponent(sub)}</span>
+                  <span className="truncate font-medium text-ink">{subLabel(current!.href, sub)}</span>
                 </>
               ) : <span className="font-medium text-ink">{current?.label ?? ""}</span>}
             </nav>

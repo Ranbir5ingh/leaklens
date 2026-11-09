@@ -1,4 +1,4 @@
-import { addDays, dayNumber } from "./dates";
+import { addDays, dayNumber, humanDate } from "./dates";
 import { rupees, type Paise } from "./money";
 import {
   channelDelivered,
@@ -314,7 +314,7 @@ export function reconcileOrder(o: OrderRow, ctx: Ctx): ReconResult {
   if (returned) {
     const windowEnd = o.statusDate ? addDays(o.statusDate, returnDays) : null;
     if (ctx.scans.length === 0 && windowEnd && dayNumber(windowEnd) < asOfDay) {
-      issues.push({ type: "return_not_received", amount: o.value, partner: kind === "website" && o.courier ? o.courier : o.channel, message: `Marked returned on ${o.statusDate}; no warehouse receipt scan after ${returnDays} days.`, since: windowEnd });
+      issues.push({ type: "return_not_received", amount: o.value, partner: kind === "website" && o.courier ? o.courier : o.channel, message: `Marked returned on ${o.statusDate ? humanDate(o.statusDate) : "an unknown date"}; no warehouse receipt scan after ${returnDays} days.`, since: windowEnd });
     }
   }
 
@@ -323,7 +323,7 @@ export function reconcileOrder(o: OrderRow, ctx: Ctx): ReconResult {
   if (!returned && expected > 0) {
     if (inflowRows === 0) {
       if (dueDate && dayNumber(dueDate) < asOfDay) {
-        issues.push({ type: "unpaid_past_due", amount: expected, partner, message: `Nothing received; payment was due on ${dueDate}.`, since: dueDate });
+        issues.push({ type: "unpaid_past_due", amount: expected, partner, message: `Nothing received; payment was due on ${humanDate(dueDate)}.`, since: dueDate });
       }
     } else if (paymentGap < -tol) {
       issues.push({ type: "short_paid", amount: -paymentGap, partner, message: `Received ₹${((received + freightOver) / 100).toFixed(2)} against expected ₹${(expected / 100).toFixed(2)}.`, since: dueDate ?? lastDate(receivedLines) });

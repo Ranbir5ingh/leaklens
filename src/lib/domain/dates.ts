@@ -55,3 +55,10 @@ function valid(y: number, mo: number, d: number): string | null {
   if (dt.getUTCMonth() !== mo - 1) return null;
   return dt.toISOString().slice(0, 10);
 }
+
+const MONTH_ABBR = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+/** "2026-09-27" → "27 Sep 2026" — locale-free, so engine messages read the same in the UI, CSV and PDF. */
+export function humanDate(iso: string): string {
+  const [y, m, d] = iso.split("-").map(Number);
+  return y && m && d ? `${d} ${MONTH_ABBR[m - 1]} ${y}` : iso;
+}

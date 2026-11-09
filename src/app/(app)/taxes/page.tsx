@@ -17,7 +17,7 @@ export default async function TaxesPage() {
   const months = [...new Set(rows.map((r) => r.month))];
   const variance = (a: number, e: number) => {
     const d = a - e;
-    return Math.abs(d) <= 1000 ? <span className="text-muted">—</span> : <span className={cx("num", d < 0 ? "text-loss" : "text-ink-2")}>{d > 0 ? "+" : "−"}{formatINR(Math.abs(d), { exact: true })}</span>;
+    return Math.abs(d) <= 1000 ? <span className="text-muted">—</span> : <span className={cx("num", d < 0 ? "text-loss" : "font-medium text-warn")}>{d > 0 ? "+" : "−"}{formatINR(Math.abs(d), { exact: true })}</span>;
   };
   return (
     <>
@@ -29,8 +29,8 @@ export default async function TaxesPage() {
       <div className="mb-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Card className="p-3.5"><div className="text-xs text-muted">TCS withheld (GST)</div><div className="num mt-0.5 text-xl font-semibold">{formatINR(tot.tcs)}</div><div className="text-xs text-muted">claim in GSTR-3B via GSTR-2A</div></Card>
         <Card className="p-3.5"><div className="text-xs text-muted">TDS withheld (194-O)</div><div className="num mt-0.5 text-xl font-semibold">{formatINR(tot.tds)}</div><div className="text-xs text-muted">check against Form 26AS</div></Card>
-        <Card className="p-3.5"><div className="text-xs text-muted">Expected TCS at 0.5%</div><div className="num mt-0.5 text-xl font-semibold">{formatINR(tot.etcs)}</div><div className="text-xs text-muted">difference {formatINR(tot.tcs - tot.etcs, { sign: true })}</div></Card>
-        <Card className="p-3.5"><div className="text-xs text-muted">Expected TDS at 0.1%</div><div className="num mt-0.5 text-xl font-semibold">{formatINR(tot.etds)}</div><div className="text-xs text-muted">difference {formatINR(tot.tds - tot.etds, { sign: true })}</div></Card>
+        <Card className="p-3.5"><div className="text-xs text-muted">Expected TCS at 0.5%</div><div className="num mt-0.5 text-xl font-semibold">{formatINR(tot.etcs)}</div><div className={cx("text-xs", Math.abs(tot.tcs - tot.etcs) > 1000 ? "font-medium text-warn" : "text-muted")}>difference {formatINR(tot.tcs - tot.etcs, { sign: true })}{Math.abs(tot.tcs - tot.etcs) > 1000 ? " — check the rows below" : ""}</div></Card>
+        <Card className="p-3.5"><div className="text-xs text-muted">Expected TDS at 0.1%</div><div className="num mt-0.5 text-xl font-semibold">{formatINR(tot.etds)}</div><div className={cx("text-xs", Math.abs(tot.tds - tot.etds) > 1000 ? "font-medium text-warn" : "text-muted")}>difference {formatINR(tot.tds - tot.etds, { sign: true })}{Math.abs(tot.tds - tot.etds) > 1000 ? " — check the rows below" : ""}</div></Card>
       </div>
       <div className="mb-4"><Alert tone="info">Expected amounts assume 5% GST on home goods (assumption A7). A variance means a partner withheld more or less than the statutory rate — reconcile it with your tax advisor; the app does not file anything.</Alert></div>
       {rows.length === 0 ? (

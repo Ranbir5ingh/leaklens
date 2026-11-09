@@ -29,6 +29,17 @@ const iso = (d: unknown): string | null => (d === null || d === undefined ? null
  * Set-based on both sides: 6 SELECTs in, chunked multi-row INSERTs out.
  */
 export async function runReconciliation(sql: Sql, opts: { userId: number | null; trigger: string; asOf?: string }) {
+  // One run at a time, and each run reads and writes inside one transaction: two uploads finishing together
+  // cannot interleave, and a run never writes results computed from data older than the previous run's.
+  return sql.begin(async (tx) => {
+    await tx`select pg_advisory_xact_lock(${RECON_LOCK})`;
+    return runLocked(tx as unknown as Sql, opts);
+  });
+}
+
+const RECON_LOCK = 7_340_001;
+
+async function runLocked(sql: Sql, opts: { userId: number | null; trigger: string; asOf?: string }) {
   const asOf = opts.asOf ?? todayIST();
   const t0 = performance.now();
   const [orderRows, sRows, cRows, fRows, rRows, rateCards] = await Promise.all([
@@ -59,7 +70,7 @@ export async function runReconciliation(sql: Sql, opts: { userId: number | null;
 
   const runStats = { ...out.stats, orphans: out.orphans.length, suggestions: suggestions.length, skipped: out.skipped.length, skippedSample: out.skipped.slice(0, 20) };
 
-  const runId = await sql.begin(async (tx) => {
+  const runId = await (async (tx: Sql) => {
     const [run] = await tx`insert into recon_runs (as_of, triggered_by, trigger, stats) values (${asOf}, ${opts.userId}, ${opts.trigger}, ${JSON.stringify(runStats)}::text::jsonb) returning id`;
     await tx`delete from recon_results`;
     await bulkInsert(tx as unknown as Sql, "recon_results", out.results.map((r) => {
@@ -96,7 +107,7 @@ export async function runReconciliation(sql: Sql, opts: { userId: number | null;
     await bulkInsert(tx as unknown as Sql, "match_suggestions", suggestions.filter((s) => s.orphan.rowId !== undefined).map((s) => ({ ...row(s.orphan), candidate_order_id: s.orderId, confidence: s.confidence, reasons: s.reasons })), { onConflict: "on conflict do nothing" });
     await bulkInsert(tx as unknown as Sql, "match_suggestions", out.orphans.filter((o) => o.rowId !== undefined && !withSuggestion.has(`${o.kind}:${o.rowId}`)).map((o) => ({ ...row(o), candidate_order_id: null, confidence: 0, reasons: ["No plausible order found — check with the partner"] })), { onConflict: "on conflict do nothing" });
     return run.id as number;
-  });
+  })(sql);
   const tWrite = performance.now();
   const timings = { loadMs: Math.round(tLoad - t0), matchMs: Math.round(tMatch - tLoad), suggestMs: Math.round(tSuggest - tMatch), writeMs: Math.round(tWrite - tSuggest), totalMs: Math.round(tWrite - t0) };
   await sql`update recon_runs set duration_ms = ${timings.totalMs}, timings = ${JSON.stringify(timings)}::text::jsonb where id = ${runId}`;

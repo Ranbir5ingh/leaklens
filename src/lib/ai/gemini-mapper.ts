@@ -27,7 +27,7 @@ const responseSchema = z.object({
   ),
 });
 
-export const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
+export const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-3.5-flash-lite";
 
 export async function suggestMapping(kind: FileKind, headers: string[], sample: RawRow[], opts: { timeoutMs?: number } = {}): Promise<MappingSuggestion> {
   const heuristic = suggestMappingHeuristic(kind, headers, sample);
@@ -93,13 +93,14 @@ async function callGemini(key: string, kind: FileKind, headers: string[], sample
             },
             required: ["mappings"],
           },
-          thinkingConfig: { thinkingBudget: 0 },
+          thinkingConfig: { thinkingLevel: "low" },
         },
       }),
     });
     if (!res.ok) throw new Error(`Gemini HTTP ${res.status}`);
     const json = await res.json();
-    const text: string | undefined = json?.candidates?.[0]?.content?.parts?.[0]?.text;
+    const parts: { text?: string; thought?: boolean }[] = json?.candidates?.[0]?.content?.parts ?? [];
+    const text: string | undefined = parts.filter((p) => !p.thought && typeof p.text === "string").map((p) => p.text).join("") || undefined;
     if (!text) throw new Error("empty AI response");
     return responseSchema.parse(JSON.parse(text));
   } catch (e) {

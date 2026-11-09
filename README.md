@@ -1,36 +1,50 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# LeakLens — order, payment & return reconciliation
 
-## Getting Started
+LeakLens shows a D2C home brand, order by order, whether each sales channel, courier and payment gateway paid the right amount. When one didn't, it shows how much is at risk, who owes it and how old it is, and gives you the evidence to claim it back.
 
-First, run the development server:
+Built for brief #4 (Company A: website + 3 marketplaces + 2 quick-commerce apps, 2 courier aggregators, 1 gateway, ~12,000 orders/month).
+
+## What it does
+
+- **Imports any partner report** (CSV/Excel). Each partner + report type keeps a **saved, versioned column mapping**. When a format changes, AI (Gemini, with a rule-based fallback) suggests a new mapping with a confidence per field. You preview 20 normalised rows, approve, and only then is the mapping saved as a new version (rollback is co-founder only).
+- **Matches every order** against settlements, COD remittances, freight invoices and warehouse return scans. Each order gets one of five statuses: *settled, short-paid, unpaid past due, freight overcharged, return not received* (plus *awaiting payment* while not yet due).
+- **Rate cards** per channel and courier (commission, fixed-fee bands, weight slabs per zone, COD and RTO rules). Any gap over **₹10** is flagged.
+- **Claims list per partner** with CSV and PDF evidence packs and a status workflow: open → raised → recovered / rejected.
+- **Money-at-risk overview** by partner and age.
+- **Review queue**: partner rows with a missing or unknown order ID get scored match suggestions with reasons. They are never linked automatically.
+- **TCS/TDS** are shown separately as tax credits, never as leakage.
+- **Customer PII is masked** in the browser before upload and again on the server (DPDP Act 2023). Addresses are never stored.
+- **Two roles with real RBAC**: finance executive and finance co-founder, enforced on the server.
+
+## Quick start (local)
+
+Requires Node ≥ 20.9 and PostgreSQL 15+.
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+cp .env.example .env.local     # set DATABASE_URL and SESSION_SECRET (GEMINI_API_KEY optional)
+npm install
+npm run db:setup               # migrate + seed 12,000 synthetic orders (~3 s)
+npm run dev                    # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Demo logins (synthetic data only):
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+| Role | Email | Password |
+|---|---|---|
+| Finance executive | `exec@leaklens.demo` | `Exec@Demo2026` |
+| Finance co-founder | `cofounder@leaklens.demo` | `Founder@Demo2026` |
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Checks
 
-## Learn More
+```bash
+npm run typecheck && npm run lint && npm test   # unit + 1-lakh performance test
+npm run bench                                    # 1,00,000-order pipeline benchmark
+npm run build && npm start &                     # then:
+BASE_URL=http://localhost:3000 npm run e2e       # Playwright flows, desktop + phone
+```
 
-To learn more about Next.js, take a look at the following resources:
+## Stack
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Next.js 16 (App Router, server actions, `proxy.ts`), TypeScript, Tailwind CSS 4, PostgreSQL via `postgres` + Drizzle schema/migrations, zod, jose (signed session cookies), bcrypt, pdf-lib, Papa Parse / SheetJS (in-browser parsing), Vitest, Playwright.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+See `deployment.md` and the TDD in the submission for architecture, the matching algorithm, assumptions and limitations.

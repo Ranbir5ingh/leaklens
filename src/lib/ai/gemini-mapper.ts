@@ -36,7 +36,7 @@ export async function suggestMapping(kind: FileKind, headers: string[], sample: 
     return { ...heuristic, warnings: ["AI is not configured (GEMINI_API_KEY unset) — showing rule-based suggestions."] };
   }
   try {
-    const ai = await callGemini(key, kind, headers, sample, opts.timeoutMs ?? 15000);
+    const ai = await callGeminiWithRetry(key, kind, headers, sample, opts.timeoutMs ?? 15000);
     return merge(kind, headers, ai, heuristic);
   } catch (e) {
     const why = e instanceof Error ? e.message : "unknown error";
@@ -59,6 +59,20 @@ export function buildPrompt(kind: FileKind, headers: string[], sample: RawRow[])
     "Rules: use only column names from the list above, spelled exactly. Use null when no column fits. Never map one column to two fields.",
     "Give a confidence between 0 and 1 and a short reason. Be honest: use a low confidence when unsure.",
   ].join("\n");
+}
+
+/** One retry on a transient 429/5xx (Gemini returns 503 when overloaded), inside the same overall time budget. */
+async function callGeminiWithRetry(key: string, kind: FileKind, headers: string[], sample: RawRow[], timeoutMs: number) {
+  const started = Date.now();
+  try {
+    return await callGemini(key, kind, headers, sample, timeoutMs);
+  } catch (e) {
+    const transient = e instanceof Error && /HTTP (429|5\d\d)/.test(e.message);
+    const left = timeoutMs - (Date.now() - started) - 800;
+    if (!transient || left < 3000) throw e;
+    await new Promise((r) => setTimeout(r, 800));
+    return callGemini(key, kind, headers, sample, left);
+  }
 }
 
 async function callGemini(key: string, kind: FileKind, headers: string[], sample: RawRow[], timeoutMs: number) {
@@ -112,6 +126,13 @@ async function callGemini(key: string, kind: FileKind, headers: string[], sample
   }
 }
 
+/** The model sometimes echoes internal field keys ("settlementRef"); show the labels people see instead. */
+function humanizeReason(kind: FileKind, reason: string): string {
+  let out = reason.slice(0, 240);
+  for (const fd of FIELDS[kind]) out = out.replace(new RegExp(`\\b${fd.key}\\b`, "g"), fd.label.toLowerCase());
+  return out;
+}
+
 /** Reconcile the model's answer with reality and with the heuristic. Exported for tests. */
 export function merge(kind: FileKind, headers: string[], ai: z.infer<typeof responseSchema>, heuristic: MappingSuggestion): MappingSuggestion {
   const real = new Map(headers.map((h) => [h.trim().toLowerCase(), h]));
@@ -125,7 +146,7 @@ export function merge(kind: FileKind, headers: string[], ai: z.infer<typeof resp
       if (!header) warnings.push(`AI proposed a column "${m.header}" that is not in the file — ignored.`);
     }
     const prev = byField.get(m.field);
-    if (!prev || m.confidence > prev.confidence) byField.set(m.field, { header, confidence: m.confidence, reason: m.reason });
+    if (!prev || m.confidence > prev.confidence) byField.set(m.field, { header, confidence: m.confidence, reason: humanizeReason(kind, m.reason ?? "") });
   }
   // One header → one field: keep the more confident claim.
   const owner = new Map<string, string>();

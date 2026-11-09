@@ -4,7 +4,7 @@ import { suggestMappingHeuristic, suggestionToMapping } from "@/lib/domain/heuri
 import { merge } from "@/lib/ai/gemini-mapper";
 import { maskName, maskPhone, redactForAI } from "@/lib/domain/pii";
 import { parseMoney } from "@/lib/domain/money";
-import { parseDate } from "@/lib/domain/dates";
+import { humanDate, parseDate } from "@/lib/domain/dates";
 
 describe("value parsing", () => {
   it("parses Indian money formats", () => {
@@ -118,6 +118,13 @@ describe("AI answer handling (no network)", () => {
     expect(byField.settlementDate.alternatives).toContain("Payout Date");
   });
 
+  it("shows field labels, not internal keys, in AI reasons", () => {
+    const out = merge("settlement", headers, { mappings: [{ field: "orderId", header: "Sub Order ID", confidence: 0.9, reason: "Sub Order ID maps to orderId." }] }, heur);
+    const r = out.fields.find((f) => f.field === "orderId")!.reason;
+    expect(r).not.toMatch(/orderId/);
+    expect(r).toMatch(/order id/i);
+  });
+
   it("never lets one column feed two fields", () => {
     const out = merge("settlement", headers, { mappings: [
       { field: "net", header: "Net Payout", confidence: 0.9, reason: "" },
@@ -126,5 +133,12 @@ describe("AI answer handling (no network)", () => {
     const used = out.fields.filter((f) => f.header === "Net Payout");
     expect(used).toHaveLength(1);
     expect(used[0].field).toBe("net");
+  });
+});
+
+describe("dates in messages", () => {
+  it("formats ISO dates the same way everywhere", () => {
+    expect(humanDate("2026-09-27")).toBe("27 Sep 2026");
+    expect(humanDate("not a date")).toBe("not a date");
   });
 });

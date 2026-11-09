@@ -29,6 +29,16 @@ async function main() {
   const asOf = todayIST();
   const t0 = performance.now();
 
+  // Deploy builds call `seed --if-empty` so a fresh database gets demo data but live data is never wiped.
+  if (process.argv.includes("--if-empty")) {
+    const [{ n: users }] = await sql<{ n: number }[]>`select count(*)::int as n from users`;
+    if (users > 0) {
+      console.log(`Database already has ${users} users — skipping seed.`);
+      await sql.end();
+      return;
+    }
+  }
+
   await sql`truncate audit_log, claims, match_suggestions, recon_results, recon_runs, return_scans, freight_lines, cod_remittances, settlements, orders, uploads, mapping_versions, rate_cards, sources, partners, login_attempts, users restart identity cascade`;
 
   const userIds: Record<string, number> = {};

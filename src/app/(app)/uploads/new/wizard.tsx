@@ -228,6 +228,7 @@ export function UploadWizard({ sources }: { sources: SourceOption[] }) {
                 {busy ? <Loader2 className="h-6 w-6 animate-spin text-accent" /> : <Upload className="h-6 w-6 text-muted" />}
                 <span className="mt-2 text-sm font-medium">{busy ?? "Choose a CSV or Excel file, or drop it here"}</span>
                 <span className="mt-1 text-xs text-muted">Read in your browser. Only mapped columns are uploaded; names and phones are masked first.</span>
+                <span className="mt-2 text-[11.5px] text-faint">UTF-8 CSV or .xlsx (first sheet) · dates read day-first: 09-11-2026, 9 Nov 2026 or Excel dates · ₹, commas and (brackets) handled</span>
                 <input ref={inputRef} type="file" accept=".csv,.xlsx,.xls,text/csv" className="sr-only" disabled={!!busy} onChange={(e) => { const f = e.target.files?.[0]; if (f) onFile(f); }} />
               </label>
             </div>

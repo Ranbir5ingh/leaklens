@@ -121,7 +121,7 @@ export function AppShell({ user, counts, asOf, lastRunLabel, collapsed: initialC
                 <>
                   <Link href={current!.href} className="text-muted hover:text-ink">{current!.label}</Link>
                   <span className="text-faint">/</span>
-                  <span className="truncate font-medium text-ink">{decodeURIComponent(sub)}</span>
+                  <span className="truncate font-medium text-ink">{sub === "new" ? "New upload" : decodeURIComponent(sub)}</span>
                 </>
               ) : <span className="font-medium text-ink">{current?.label ?? ""}</span>}
             </nav>

@@ -17,7 +17,7 @@ export default async function NewUpload() {
     select s.id, s.partner_code, p.name, s.kind, m.version from sources s join partners p on p.code = s.partner_code left join mapping_versions m on m.source_id = s.id and m.is_active order by p.code, s.kind`;
   return (
     <>
-      <Link href="/uploads" className="mb-4 inline-flex items-center gap-1 text-sm text-muted hover:text-ink"><ArrowLeft className="h-4 w-4" /> Uploads</Link>
+      <Link href="/uploads" className="mb-4 inline-flex items-center gap-1 text-sm text-muted hover:text-ink"><ArrowLeft className="h-4 w-4" /> Imports</Link>
       <PageHeader title="Upload a partner report" subtitle="Orders, settlements, COD remittances, freight invoices or warehouse scans — CSV or Excel, up to 2 lakh rows." />
       {can(user.role, "upload.create") ? (
         <UploadWizard sources={rows.map((r) => ({ id: r.id, partner: r.partner_code, partnerName: r.name, kind: r.kind, kindLabel: FILE_KIND_LABEL[r.kind], activeVersion: r.version }))} />

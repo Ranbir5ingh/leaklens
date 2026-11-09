@@ -6,7 +6,7 @@ import type { FileKind } from "@/lib/domain/types";
 import { Badge, Card, EmptyState, fmtDateTime, LinkButton, PageHeader, Td, Th } from "@/components/ui";
 import { requireUser } from "@/server/auth";
 
-export const metadata: Metadata = { title: "Uploads" };
+export const metadata: Metadata = { title: "Imports" };
 
 interface UploadRow {
   id: number;
@@ -33,7 +33,7 @@ export default async function UploadsPage() {
   return (
     <>
       <PageHeader
-        title="Uploads"
+        title="Imports"
         subtitle="Every partner report brought in, with the column-mapping version used. Re-uploading the same rows never double-counts: each row is fingerprinted."
         actions={<LinkButton variant="primary" href="/uploads/new"><Plus className="h-4 w-4" /> Upload a report</LinkButton>}
       />

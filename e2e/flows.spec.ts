@@ -87,6 +87,14 @@ test("co-founder edits a rate card and matching re-runs", async ({ page }) => {
 test("@phone navigation works on a phone", async ({ page }) => {
   await login(page, EXEC);
   await page.goto("/");
-  await page.getByRole("link", { name: /Claims/ }).first().click();
+  const bar = page.getByRole("navigation", { name: "Main navigation" }).last();
+  await bar.getByRole("link", { name: /Claims/ }).click();
   await expect(page).toHaveURL(/\/claims/);
+  await expect(page.getByRole("heading", { name: "Claims", exact: true })).toBeVisible();
+  // Sections beyond the four main tabs live in the More sheet.
+  await bar.getByRole("button", { name: /More/ }).click();
+  const sheet = page.getByRole("dialog", { name: "More sections" });
+  await sheet.getByRole("link", { name: /Returns/ }).click();
+  await expect(page).toHaveURL(/\/returns/);
+  await expect(sheet).toBeHidden();
 });
